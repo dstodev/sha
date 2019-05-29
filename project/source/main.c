@@ -13,6 +13,7 @@ int main(int argc, char * argv[])
 	}
 
 	char * d = digest("test");
+	printf("%x\n", *d);
 
 	return 0;
 }

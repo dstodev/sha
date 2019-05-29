@@ -1,6 +1,7 @@
 #include "sha.h"
 
 #include <math.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -15,10 +16,10 @@
 #define SHA_SIGMA_0_256(x) (SHA_ROTR(x, 07) ^ SHA_ROTR(x, 18) ^ SHA_SHR(x, 03));
 #define SHA_SIGMA_1_256(x) (SHA_ROTR(x, 17) ^ SHA_ROTR(x, 19) ^ SHA_SHR(x, 10));
 
-typedef struct _sha_constants_t
+typedef struct sha_constants_t
 {
-	unsigned int k[64];  // K constants.
-	int h[8];            // H constants.
+	uint32_t k[64];  // K constants.
+	uint32_t h[8];   // H constants.
 
 } sha_constants_t;
 
@@ -26,43 +27,40 @@ static void populate_sha_constants(sha_constants_t * c);
 
 char * digest(const char * message)
 {
+	const char * border = "\x80\n";  // (1<<7)
 	char * padded_message;
+	size_t message_size;
 	sha_constants_t c;
-	unsigned long int blocks;
-	unsigned long int l;
-	int k;
+	uint64_t blocks;
+	uint64_t l;
 
 	// Populate K and H constants
 	populate_sha_constants(&c);
 
 	// Calculate size l of message in bits
-	l = strlen(message) * 8;
-
-	// Calculate k (zero padding) for trailing block
-	// k = (447 - l) % 512;
+	l = (uint64_t) strlen(message) * 8;
 
 	// Calculate number of 512-bit blocks
-	if (blocks = (unsigned long) ceil((l + 65) / 512)) {
+	if ((blocks = (uint64_t) ceil((l + 65.0) / 512)) > 0) {
 
 		// Allocate memory for padded message
-		padded_message = calloc(blocks * 64, sizeof(char));
+		message_size = blocks * 64 * sizeof(char) + 1;
+		padded_message = malloc(message_size);
+		memset(padded_message, 0, message_size);
 
 		/*
 		| 512-bits message | ... | n-bits message | 1 | zero padding 'k' | length in bits 'l' |
 		*/
 
 		// Copy message to padded string
-		strcpy(padded_message, message);
+		strcpy_s(padded_message, message_size, message);
 
 		// Characters are byte aligned; will always have 0x80 after message field
-		strcat(padded_message, (char) (1 << 7));
+		strcat_s(padded_message, message_size, border);
 
 		// Insert length value at the end of the padded message
-		for (int i = 0; i < 8; ++i) {
-			padded_message[blocks * 64 - 8 + i] = (l & (0xFF << ((7 - i) * 8))) >> ((7 - i) * 8);
-		}
 		for (int i = 7; i >= 0; --i) {
-			padded_message[blocks * 64 - i - 1] = (l & ((0xFF << i) * 8)) >> (i * 8);
+			padded_message[blocks * 64 - i - 1] = (l & (0xFF << (i * 8))) >> (i * 8);
 		}
 	}
 
@@ -92,12 +90,12 @@ static void generate_prime_numbers(unsigned int * arr, unsigned int n)
 	}
 }
 
-static void generate_k_constants(unsigned int * arr)
+static void generate_k_constants(uint32_t * arr)
 {
 	/* Array size must be 64 (there are 64 'k' constants) */
 
-	static unsigned int k[64];
-	unsigned int primes[64];
+	static uint32_t k[64];
+	uint32_t primes[64];
 	double temp;
 	char initialized = 0;
 
@@ -111,7 +109,7 @@ static void generate_k_constants(unsigned int * arr)
 			temp *= pow(2, 32);  // Multiply by 2^32 to get the first 32 bits of the fractional component as
 			                     // a whole value.
 			temp = floor(temp);  // Keep only the whole value.
-			k[i] = (unsigned int) temp;  // Store the value.
+			k[i] = (uint32_t) temp;  // Store the value.
 		}
 		initialized = 1;
 	}
@@ -123,7 +121,7 @@ static void generate_k_constants(unsigned int * arr)
 	}
 }
 
-static void generate_h_constants(int * arr)
+static void generate_h_constants(uint32_t * arr)
 {
 	/* Array size must be 8 (there are 8 'h' constants) */
 
