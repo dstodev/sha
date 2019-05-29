@@ -1,0 +1,18 @@
+{
+	"folders": [
+		{
+			"path": "..",
+			"name": "Project: CST 466 i (SHA-256)"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			".clang-format": "yaml",
+		},
+		"files.exclude": {
+			".vscode/ipch": true,
+		},
+		// Extension settings
+		"C_Cpp.updateChannel": "Insiders",
+	}
+}
