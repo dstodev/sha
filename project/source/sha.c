@@ -28,9 +28,9 @@ static void populate_sha_constants(sha_constants_t * c);
 char * digest(const char * message)
 {
 	const char * border = "\x80\n";  // (1<<7)
-	char * padded_message;
-	size_t message_size;
 	sha_constants_t c;
+	char * padded_message;
+	uint64_t message_size;
 	uint64_t blocks;
 	uint64_t l;
 
@@ -38,7 +38,7 @@ char * digest(const char * message)
 	populate_sha_constants(&c);
 
 	// Calculate size l of message in bits
-	l = (uint64_t) strlen(message) * 8;
+	l = (uint64_t)(strlen(message) * 8);
 
 	// Calculate number of 512-bit blocks
 	if ((blocks = (uint64_t) ceil((l + 65.0) / 512)) > 0) {
