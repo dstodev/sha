@@ -24,45 +24,18 @@ typedef struct sha_constants_t
 } sha_constants_t;
 
 static void populate_sha_constants(sha_constants_t * c);
+static char * form_message(const char * message);
 
 char * digest(const char * message)
 {
-	const char * border = "\x80\n";  // (1<<7)
 	sha_constants_t c;
-	char * padded_message;
-	uint64_t message_size;
-	uint64_t blocks;
-	uint64_t l;
+	char * formed_message;
 
 	// Populate K and H constants
 	populate_sha_constants(&c);
 
-	// Calculate size l of message in bits
-	l = (uint64_t)(strlen(message) * 8);
-
-	// Calculate number of 512-bit blocks
-	if ((blocks = (uint64_t) ceil((l + 65.0) / 512)) > 0) {
-
-		// Allocate memory for padded message
-		message_size = blocks * 64 * sizeof(char) + 1;
-		padded_message = malloc(message_size);
-		memset(padded_message, 0, message_size);
-
-		/*
-		| 512-bits message | ... | n-bits message | 1 | zero padding 'k' | length in bits 'l' |
-		*/
-
-		// Copy message to padded string
-		strcpy_s(padded_message, message_size, message);
-
-		// Characters are byte aligned; will always have 0x80 after message field
-		strcat_s(padded_message, message_size, border);
-
-		// Insert length value at the end of the padded message
-		for (int i = 7; i >= 0; --i) {
-			padded_message[blocks * 64 - i - 1] = (l & (0xFF << (i * 8))) >> (i * 8);
-		}
-	}
+	// Form message to digest (insert padding, length bits, etc.)
+	formed_message = form_message(message);
 
 	return 0;
 }
@@ -95,9 +68,9 @@ static void generate_k_constants(uint32_t * arr)
 	/* Array size must be 64 (there are 64 'k' constants) */
 
 	static uint32_t k[64];
+	static char initialized = 0;
 	uint32_t primes[64];
 	double temp;
-	char initialized = 0;
 
 	// Calculating prime numbers and their cube roots takes a lot of time; only do it if it hasn't been done
 	// already.
@@ -140,4 +113,42 @@ static void populate_sha_constants(sha_constants_t * c)
 {
 	generate_k_constants(c->k);
 	generate_h_constants(c->h);
+}
+
+static char * form_message(const char * message)
+{
+	const char * border = "\x80\n";  // (1<<7)
+	char * padded_message = 0;
+	uint64_t message_size;
+	uint64_t blocks;
+	uint64_t l;
+
+	// Calculate size l of message in bits
+	l = (uint64_t)(strlen(message) * 8);
+
+	// Calculate number of 512-bit blocks
+	if ((blocks = (uint64_t) ceil((l + 65.0) / 512)) > 0) {
+
+		// Allocate memory for padded message
+		message_size = blocks * 64 * sizeof(char) + 1;
+		padded_message = malloc(message_size);
+		memset(padded_message, 0, message_size);
+
+		/*
+		| 512-bits message | ... | n-bits message | 1 | zero padding 'k' | length in bits 'l' |
+		*/
+
+		// Copy message to padded string
+		strcpy_s(padded_message, message_size, message);
+
+		// Characters are byte aligned; will always have 0x80 after message field
+		strcat_s(padded_message, message_size, border);
+
+		// Insert length value at the end of the padded message
+		for (int i = 7; i >= 0; --i) {
+			padded_message[blocks * 64 - i - 1] = (l & (0xFF << (i * 8))) >> (i * 8);
+		}
+	}
+
+	return padded_message;
 }
