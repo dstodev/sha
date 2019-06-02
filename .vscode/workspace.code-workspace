@@ -13,6 +13,11 @@
 			".vscode/ipch": true,
 		},
 		// Extension settings
+		"cmake.buildDirectory": "${workspaceRoot}/build",
+		"cmake.sourceDirectory": "${workspaceRoot}/project",
+		"cmake.debugConfig": {
+			"cwd": "${workspaceRoot}/build"
+		},
 		"C_Cpp.updateChannel": "Insiders",
 	}
 }
