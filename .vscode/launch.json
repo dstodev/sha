@@ -1,0 +1,20 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "(Windows) Debug",
+			"type": "cppvsdbg",
+			"request": "launch",
+			// Resolved by CMake Tools:
+			"program": "${command:cmake.launchTargetPath}",
+			"args": [
+				"test",
+				"abc",
+				"test 123"
+			],
+			"symbolSearchPath": "${workspaceFolder}/build",
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}/build",
+		}
+	]
+}
