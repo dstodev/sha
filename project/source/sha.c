@@ -18,8 +18,8 @@
 
 typedef struct sha_variables_t
 {
-	uint32_t k[64];  // K constants.
-	uint32_t h[8];   // H variables.
+	uint32_t k[64];  // K constants
+	uint32_t h[8];   // H variables
 } sha_variables_t;
 
 static void populate_sha_constants(sha_variables_t * constants);
@@ -68,7 +68,7 @@ static void generate_prime_numbers(uint32_t * arr, uint32_t n)
 	char flag;
 
 	if (arr) {
-		// Find primes up to n.
+		// Find primes up to n
 		for (uint32_t count = 0; count < n;) {
 			flag = 1;
 			for (int j = 2; j <= sqrt(i); ++j) {
@@ -99,12 +99,12 @@ static void generate_k_constants(uint32_t * arr)
 	if (!initialized) {
 		generate_prime_numbers(primes, sizeof(primes) / sizeof(uint32_t));
 		for (int i = 0; i < sizeof(primes) / sizeof(uint32_t); ++i) {
-			temp = cbrt((double) primes[i]);  // Cube root of prime number.
-			temp = fmod(temp, 1);             // Modulus by 1 to get rid of whole value.
+			temp = cbrt((double) primes[i]);  // Cube root of prime number
+			temp = fmod(temp, 1);             // Modulus by 1 to get rid of whole value
 			temp *= pow(2, 32);  // Multiply by 2^32 to get the first 32 bits of the fractional component as
-			                     // a whole value.
-			temp = floor(temp);  // Keep only the whole value.
-			k[i] = (uint32_t) temp;  // Store the value.
+			                     // a whole value
+			temp = floor(temp);  // Keep only the whole value
+			k[i] = (uint32_t) temp;  // Store the value
 		}
 		initialized = 1;
 	}
@@ -130,12 +130,12 @@ static void initialize_h_variables(uint32_t * arr)
 	if (!initialized) {
 		generate_prime_numbers(primes, sizeof(primes) / sizeof(uint32_t));
 		for (int i = 0; i < sizeof(primes) / sizeof(uint32_t); ++i) {
-			temp = sqrt((double) primes[i]);  // Cube root of prime number.
-			temp = fmod(temp, 1);             // Modulus by 1 to get rid of whole value.
+			temp = sqrt((double) primes[i]);  // Square root of prime number
+			temp = fmod(temp, 1);             // Modulus by 1 to get rid of whole value
 			temp *= pow(2, 32);  // Multiply by 2^32 to get the first 32 bits of the fractional component as
-			                     // a whole value.
-			temp = floor(temp);  // Keep only the whole value.
-			h[i] = (uint32_t) temp;  // Store the value.
+			                     // a whole value
+			temp = floor(temp);  // Keep only the whole value
+			h[i] = (uint32_t) temp;  // Store the value
 		}
 		initialized = 1;
 	}
@@ -217,7 +217,7 @@ void sha_hash(const char * message, sha_variables_t * constants)
 			// Clear words
 			memset(words, 0, sizeof(words));
 
-			// 1. Prepare the message schedule.
+			// 1. Prepare the message schedule
 			for (int j = 0; j < 16; ++j) {
 				words[j] = chunks[i][j * 4] << 24 | chunks[i][j * 4 + 1] << 16 |
 				           chunks[i][j * 4 + 2] << 8 | chunks[i][j * 4 + 3];
@@ -227,7 +227,7 @@ void sha_hash(const char * message, sha_variables_t * constants)
 				           SHA_SIGMA_0_256(words[j - 15]) + words[j - 16];
 			}
 
-			// 2. Initialize eight working variables with the (i-1)st hash values.
+			// 2. Initialize eight working variables with the (i-1)st hash values
 			a = constants->h[0];
 			b = constants->h[1];
 			c = constants->h[2];
