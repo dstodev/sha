@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "sha.h"
 
@@ -13,7 +14,12 @@ int main(int argc, char * argv[])
 	}
 
 	char * d = digest("test");
-	printf("%x\n", *d);
+
+	for (int i = 0; i < 32; ++i) {
+		printf("%x", d[i]);
+	}
+
+	free(d);
 
 	return 0;
 }

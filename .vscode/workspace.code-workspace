@@ -8,6 +8,10 @@
 	"settings": {
 		"files.associations": {
 			".clang-format": "yaml",
+			"stdint.h": "c",
+			"stdlib.h": "c",
+			"string.h": "c",
+			"winsock.h": "c"
 		},
 		"files.exclude": {
 			".vscode/ipch": true,

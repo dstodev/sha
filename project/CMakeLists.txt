@@ -8,6 +8,7 @@ include_directories(include)
 
 file(GLOB SOURCES "source/*.c")
 add_executable(${ENTRYPOINT} ${SOURCES})
+target_link_libraries(${ENTRYPOINT} ws2_32)
 
 if (MSVC)
 	target_compile_options(${ENTRYPOINT} PRIVATE /W4 /WX)
