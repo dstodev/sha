@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define SHA_ADD(x, y) ((x + y) % 4294967296)
+#define SHA_ADD(x, y) ((x + y) % 4294967296ULL)
 #define SHA_SHR(x, n) (x >> n)
 #define SHA_ROTR(x, n) ((x >> n) | (x << (32 - n)))
 
@@ -38,13 +38,14 @@ unsigned char * digest(const char * message)
 		sha_hash(message, &c);
 
 		// Concatenate all calculated H variables
-		hash = (unsigned char *) malloc(32);
+		hash = (unsigned char *) malloc(33);
 		for (int i = 0; i < 8; ++i) {
 			hash[i * 4 + 0] = (unsigned char) ((c.h[i] & (0xFF << 24)) >> 24);
 			hash[i * 4 + 1] = (unsigned char) ((c.h[i] & (0xFF << 16)) >> 16);
 			hash[i * 4 + 2] = (unsigned char) ((c.h[i] & (0xFF << 8)) >> 8);
 			hash[i * 4 + 3] = (unsigned char) (c.h[i] & (0xFF));
 		}
+		hash[32] = 0;
 	}
 	// Return hash digest
 	return hash;
