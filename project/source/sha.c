@@ -24,8 +24,6 @@ typedef struct sha_variables_t
 
 static void populate_sha_constants(sha_variables_t * constants);
 static void sha_hash(const char * message, sha_variables_t * c);
-static inline uint64_t bit_size(const char * message);
-static inline uint64_t block_size(const char * message);
 
 unsigned char * digest(const char * message)
 {
@@ -118,16 +116,16 @@ static void generate_k_constants(uint32_t * arr)
 	}
 }
 
-static void generate_h_constants(uint32_t * arr)
+static void initialize_h_variables(uint32_t * arr)
 {
-	/* Array size must be 8 (there are 8 'h' constants) */
+	/* Array size must be 8 (there are 8 'h' variables) */
 
 	static uint32_t h[8];
 	static char initialized = 0;
 	uint32_t primes[8];
 	double temp;
 
-	// Calculating prime numbers and their cube roots takes a lot of time; only do it if it hasn't been done
+	// Calculating prime numbers and their square roots takes a lot of time; only do it if it hasn't been done
 	// already.
 	if (!initialized) {
 		generate_prime_numbers(primes, sizeof(primes) / sizeof(uint32_t));
@@ -152,7 +150,7 @@ static void generate_h_constants(uint32_t * arr)
 static void populate_sha_constants(sha_variables_t * c)
 {
 	generate_k_constants(c->k);
-	generate_h_constants(c->h);
+	initialize_h_variables(c->h);
 }
 
 static char * form_message(const char * message)
