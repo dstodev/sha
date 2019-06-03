@@ -1,6 +1,6 @@
 #ifdef _WIN32
-#define _CRT_SECURE_NO_WARNINGS
-#define strdup _strdup
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
 static char * sep = "\\";
 #else
 static char * sep = "/";
@@ -14,8 +14,11 @@ static char * sep = "/";
 
 int main(int argc, char * argv[])
 {
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+
 	char * exe = 0;
 	char * token = 0;
+	char * next_token = 0;
 	unsigned char * d = 0;
 
 	if (argc > 1) {
@@ -30,10 +33,11 @@ int main(int argc, char * argv[])
 		}
 	} else {
 		// Get executable basename
-		token = strtok(argv[0], sep);
-		exe = strdup(token);
-		while ((token = strtok(0, sep)) != 0) {
-			exe = strdup(token);
+		token = strtok_s(argv[0], sep, &next_token);
+		exe = _strdup(token);
+		while ((token = strtok_s(0, sep, &next_token)) != 0) {
+			free(exe);
+			exe = _strdup(token);
 		}
 		fprintf(stderr, "Usage: %s <input> [... input]\n", exe);
 		free(exe);

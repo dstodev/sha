@@ -210,6 +210,7 @@ void sha_hash(const char * message, sha_variables_t * constants)
 		for (int i = 0; i < blocks; ++i) {
 			memcpy(chunks[i], formed_message + (i * 64), 64);
 		}
+		free(formed_message);
 
 		for (int i = 0; i < blocks; ++i) {
 			// Clear words
@@ -259,7 +260,6 @@ void sha_hash(const char * message, sha_variables_t * constants)
 			constants->h[6] = SHA_ADD(g, constants->h[6]);
 			constants->h[7] = SHA_ADD(h, constants->h[7]);
 		}
-
 		free(chunks);
 	}
 }
