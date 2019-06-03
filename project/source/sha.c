@@ -37,7 +37,7 @@ unsigned char * digest(const char * message)
 		// Apply hash algorithm
 		sha_hash(message, &c);
 
-		// Append all calculated H variables
+		// Concatenate all calculated H variables
 		hash = (unsigned char *) malloc(32);
 		for (int i = 0; i < 8; ++i) {
 			hash[i * 4 + 0] = (unsigned char) ((c.h[i] & (0xFF << 24)) >> 24);
