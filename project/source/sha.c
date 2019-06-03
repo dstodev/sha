@@ -19,7 +19,7 @@
 typedef struct sha_variables_t
 {
 	uint32_t k[64];  // K constants.
-	uint32_t h[8];   // H constants.
+	uint32_t h[8];   // H variables.
 } sha_variables_t;
 
 static void populate_sha_constants(sha_variables_t * constants);
@@ -32,22 +32,25 @@ unsigned char * digest(const char * message)
 	sha_variables_t c;
 	unsigned char * hash = 0;
 
-	// Populate K and H constants
-	populate_sha_constants(&c);
+	if (message) {
+		// Populate K and H constants
+		populate_sha_constants(&c);
 
-	// Apply hash algorithm
-	sha_hash(message, &c);
+		// Apply hash algorithm
+		sha_hash(message, &c);
 
-	// Append all calculated H variables
-	hash = (unsigned char *) malloc(32);
-	for (int i = 0; i < 8; ++i) {
-		hash[i * 4 + 0] = (unsigned char) ((c.h[i] & (0xFF << 24)) >> 24);
-		hash[i * 4 + 1] = (unsigned char) ((c.h[i] & (0xFF << 16)) >> 16);
-		hash[i * 4 + 2] = (unsigned char) ((c.h[i] & (0xFF << 8)) >> 8);
-		hash[i * 4 + 3] = (unsigned char) (c.h[i] & (0xFF));
+		// Append all calculated H variables
+		hash = (unsigned char *) malloc(32);
+		for (int i = 0; i < 8; ++i) {
+			hash[i * 4 + 0] = (unsigned char) ((c.h[i] & (0xFF << 24)) >> 24);
+			hash[i * 4 + 1] = (unsigned char) ((c.h[i] & (0xFF << 16)) >> 16);
+			hash[i * 4 + 2] = (unsigned char) ((c.h[i] & (0xFF << 8)) >> 8);
+			hash[i * 4 + 3] = (unsigned char) (c.h[i] & (0xFF));
+		}
+
+		// Return hash digest
 	}
 
-	// Return hash digest
 	return hash;
 }
 
