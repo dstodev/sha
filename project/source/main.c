@@ -25,6 +25,7 @@ int main(int argc, char * argv[])
 		for (int i = 1; i < argc; ++i) {
 			d = digest(argv[i]);
 
+			printf("\"%s\":\t ", argv[i]);
 			for (int j = 0; j < 32; ++j) {
 				printf("%02x", d[j]);
 			}
@@ -39,7 +40,9 @@ int main(int argc, char * argv[])
 			free(exe);
 			exe = _strdup(token);
 		}
-		fprintf(stderr, "Usage: %s <input> [... input]\n", exe);
+		fprintf(stderr, "\nUsage: %s <input> [... additional input]\n", exe);
+		fprintf(stderr, "\tInput strings are separated by space character delimiter.\n");
+		fprintf(stderr, "\tTo hash a multi-word message, enclose the message in double quotes.\n");
 		free(exe);
 	}
 
