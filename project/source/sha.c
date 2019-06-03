@@ -180,7 +180,6 @@ static char * form_message(const char * message)
 		memcpy(formed_message + strlen(message), border, 1);
 
 		// Insert length value at the end of the padded message
-		// memcpy(formed_message + (blocks * 64) - 8, &l, 8);
 		for (int i = 7; i >= 0; --i) {
 			formed_message[blocks * 64 - i - 1] = (l & (0xFF << (i * 8))) >> (i * 8);
 		}
