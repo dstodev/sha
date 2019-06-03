@@ -16,26 +16,27 @@
 #define SHA_SIGMA_0_256(x) (SHA_ROTR(x, 07) ^ SHA_ROTR(x, 18) ^ SHA_SHR(x, 03));
 #define SHA_SIGMA_1_256(x) (SHA_ROTR(x, 17) ^ SHA_ROTR(x, 19) ^ SHA_SHR(x, 10));
 
-typedef struct sha_constants_t
+typedef struct sha_variables_t
 {
 	uint32_t k[64];  // K constants.
 	uint32_t h[8];   // H constants.
 
-} sha_constants_t;
+} sha_variables_t;
 
-static void populate_sha_constants(sha_constants_t * c);
-static char * form_message(const char * message);
+static void populate_sha_constants(sha_variables_t * c);
+static char * sha_encrypt(const char * message, const sha_variables_t * c);
+static inline uint64_t bit_size(const char * message);
+static inline uint64_t block_size(const char * message);
 
 char * digest(const char * message)
 {
-	sha_constants_t c;
-	char * formed_message;
+	sha_variables_t c;
 
 	// Populate K and H constants
 	populate_sha_constants(&c);
 
-	// Form message to digest (insert padding, length bits, etc.)
-	formed_message = form_message(message);
+	// Encrypt message
+	sha_encrypt(message, &c);
 
 	return 0;
 }
@@ -94,61 +95,104 @@ static void generate_k_constants(uint32_t * arr)
 	}
 }
 
-static void generate_h_constants(uint32_t * arr)
+static void generate_h_variables(uint32_t * arr, uint8_t iteration)
 {
 	/* Array size must be 8 (there are 8 'h' constants) */
 
-	// Initial 'h' constants aren't calculable.
-	arr[0] = 0x6a09e667;
-	arr[1] = 0xbb67ae85;
-	arr[2] = 0x3c6ef372;
-	arr[3] = 0xa54ff53a;
-	arr[4] = 0x510e527f;
-	arr[5] = 0x9b05688c;
-	arr[6] = 0x1f83d9ab;
-	arr[7] = 0x5be0cd19;
+	if (iteration == 0) {
+		// Initial 'h' constants aren't calculable.
+		arr[0] = 0x6a09e667;
+		arr[1] = 0xbb67ae85;
+		arr[2] = 0x3c6ef372;
+		arr[3] = 0xa54ff53a;
+		arr[4] = 0x510e527f;
+		arr[5] = 0x9b05688c;
+		arr[6] = 0x1f83d9ab;
+		arr[7] = 0x5be0cd19;
+	} else {
+	}
 }
 
-static void populate_sha_constants(sha_constants_t * c)
+static void populate_sha_constants(sha_variables_t * c)
 {
 	generate_k_constants(c->k);
-	generate_h_constants(c->h);
+	generate_h_variables(c->h, 0);
 }
 
 static char * form_message(const char * message)
 {
 	const char * border = "\x80\n";  // (1<<7)
-	char * padded_message = 0;
+	char * formed_message = 0;
 	uint64_t message_size;
 	uint64_t blocks;
 	uint64_t l;
 
-	// Calculate size l of message in bits
-	l = (uint64_t)(strlen(message) * 8);
-
 	// Calculate number of 512-bit blocks
-	if ((blocks = (uint64_t) ceil((l + 65.0) / 512)) > 0) {
+	if ((blocks = block_size(message)) > 0) {
+
+		l = bit_size(message);
 
 		// Allocate memory for padded message
 		message_size = blocks * 64 * sizeof(char) + 1;
-		padded_message = malloc(message_size);
-		memset(padded_message, 0, message_size);
+		formed_message = (char *) malloc(message_size);
+		memset(formed_message, 0, message_size);
 
 		/*
 		| 512-bits message | ... | n-bits message | 1 | zero padding 'k' | length in bits 'l' |
 		*/
 
 		// Copy message to padded string
-		strcpy_s(padded_message, message_size, message);
+		strcpy_s(formed_message, message_size, message);
 
 		// Characters are byte aligned; will always have 0x80 after message field
-		strcat_s(padded_message, message_size, border);
+		strcat_s(formed_message, message_size, border);
 
 		// Insert length value at the end of the padded message
 		for (int i = 7; i >= 0; --i) {
-			padded_message[blocks * 64 - i - 1] = (l & (0xFF << (i * 8))) >> (i * 8);
+			formed_message[blocks * 64 - i - 1] = (l & (0xFF << (i * 8))) >> (i * 8);
 		}
 	}
 
-	return padded_message;
+	return formed_message;
+}
+
+char * sha_encrypt(const char * message, const sha_variables_t * c)
+{
+	uint64_t blocks;
+
+	char * formed_message;
+	char(*chunks)[65];
+
+	*c;
+
+	if (message) {
+
+		// Form message to digest (insert padding, length bits, etc.)
+		formed_message = form_message(message);
+
+		// Slice message into 512-bit chunks
+		blocks = block_size(message);
+		chunks = ((char(*)[65]) malloc(sizeof(char) * 65 * blocks));
+		memset(chunks, 0, sizeof(char) * 65 * blocks);
+		for (int i = 0; i < 64; ++i) {
+			strncpy_s(chunks[i], 64, &formed_message[i * 64], 64);
+		}
+
+		for (int i = 0; i < blocks; ++i) {
+			// 1. Prepare the message schedule
+		}
+		free(chunks);
+	}
+
+	return 0;
+}
+
+static inline uint64_t bit_size(const char * message)
+{
+	return (message ? (uint64_t)(strlen(message) * 8) : 0);
+}
+
+static inline uint64_t block_size(const char * message)
+{
+	return (message ? (uint64_t) ceil((bit_size(message) + 65.0) / 512) : 0);
 }
