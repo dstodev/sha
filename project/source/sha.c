@@ -45,10 +45,8 @@ unsigned char * digest(const char * message)
 			hash[i * 4 + 2] = (unsigned char) ((c.h[i] & (0xFF << 8)) >> 8);
 			hash[i * 4 + 3] = (unsigned char) (c.h[i] & (0xFF));
 		}
-
-		// Return hash digest
 	}
-
+	// Return hash digest
 	return hash;
 }
 
