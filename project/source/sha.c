@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <winsock.h>
 
 #define SHA_ADD(x, y) ((x + y) % 4294967296)
 #define SHA_SHR(x, n) (x >> n)
