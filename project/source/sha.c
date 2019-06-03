@@ -6,7 +6,7 @@
 #include <string.h>
 #include <winsock.h>
 
-#define SHA_ADD(x, y) ((x + y) % pow(2, 32))
+#define SHA_ADD(x, y) ((x + y) % 4294967296)
 #define SHA_SHR(x, n) (x >> n)
 #define SHA_ROTR(x, n) ((x >> n) | (x << (32 - n)))
 
@@ -17,8 +17,6 @@
 #define SHA_SIGMA_0_256(x) (SHA_ROTR(x, 07) ^ SHA_ROTR(x, 18) ^ SHA_SHR(x, 03))
 #define SHA_SIGMA_1_256(x) (SHA_ROTR(x, 17) ^ SHA_ROTR(x, 19) ^ SHA_SHR(x, 10))
 
-#define htonll(x) ((1 == htonl(1)) ? (x) : ((uint64_t) htonl((x) &0xFFFFFFFF) << 32) | htonl((x) >> 32))
-
 typedef struct sha_variables_t
 {
 	uint32_t k[64];  // K constants.
@@ -26,36 +24,32 @@ typedef struct sha_variables_t
 } sha_variables_t;
 
 static void populate_sha_constants(sha_variables_t * constants);
-static void sha_encrypt(const char * message, sha_variables_t * c);
+static void sha_hash(const char * message, sha_variables_t * c);
 static inline uint64_t bit_size(const char * message);
 static inline uint64_t block_size(const char * message);
 
-char * digest(const char * message)
+unsigned char * digest(const char * message)
 {
 	sha_variables_t c;
-	char * digest = 0;
+	unsigned char * hash = 0;
 
 	// Populate K and H constants
 	populate_sha_constants(&c);
 
-	// Encrypt message
-	sha_encrypt(message, &c);
+	// Apply hash algorithm
+	sha_hash(message, &c);
 
-	// Return digest
-	digest = (char *) malloc(32);
+	// Append all calculated H variables
+	hash = (unsigned char *) malloc(32);
 	for (int i = 0; i < 8; ++i) {
-		c.h[i] = htonl(c.h[i]);
+		hash[i * 4 + 0] = (unsigned char) ((c.h[i] & (0xFF << 24)) >> 24);
+		hash[i * 4 + 1] = (unsigned char) ((c.h[i] & (0xFF << 16)) >> 16);
+		hash[i * 4 + 2] = (unsigned char) ((c.h[i] & (0xFF << 8)) >> 8);
+		hash[i * 4 + 3] = (unsigned char) (c.h[i] & (0xFF));
 	}
-	memcpy(digest + 0x00, &c.h[0], 4);
-	memcpy(digest + 0x04, &c.h[1], 4);
-	memcpy(digest + 0x08, &c.h[2], 4);
-	memcpy(digest + 0x0C, &c.h[3], 4);
-	memcpy(digest + 0x10, &c.h[4], 4);
-	memcpy(digest + 0x14, &c.h[5], 4);
-	memcpy(digest + 0x18, &c.h[6], 4);
-	memcpy(digest + 0x1C, &c.h[7], 4);
 
-	return digest;
+	// Return hash digest
+	return hash;
 }
 
 static inline uint64_t bit_size(const char * message)
@@ -103,8 +97,8 @@ static void generate_k_constants(uint32_t * arr)
 	// Calculating prime numbers and their cube roots takes a lot of time; only do it if it hasn't been done
 	// already.
 	if (!initialized) {
-		generate_prime_numbers(primes, 64);
-		for (int i = 0; i < 64; ++i) {
+		generate_prime_numbers(primes, sizeof(primes) / sizeof(uint32_t));
+		for (int i = 0; i < sizeof(primes) / sizeof(uint32_t); ++i) {
 			temp = cbrt((double) primes[i]);  // Cube root of prime number.
 			temp = fmod(temp, 1);             // Modulus by 1 to get rid of whole value.
 			temp *= pow(2, 32);  // Multiply by 2^32 to get the first 32 bits of the fractional component as
@@ -116,7 +110,7 @@ static void generate_k_constants(uint32_t * arr)
 	}
 
 	if (arr) {
-		for (int i = 0; i < 64; ++i) {
+		for (int i = 0; i < sizeof(k) / sizeof(uint32_t); ++i) {
 			arr[i] = k[i];
 		}
 	}
@@ -126,15 +120,31 @@ static void generate_h_constants(uint32_t * arr)
 {
 	/* Array size must be 8 (there are 8 'h' constants) */
 
-	// Initial 'h' constants aren't calculable.
-	arr[0] = 0x6a09e667;
-	arr[1] = 0xbb67ae85;
-	arr[2] = 0x3c6ef372;
-	arr[3] = 0xa54ff53a;
-	arr[4] = 0x510e527f;
-	arr[5] = 0x9b05688c;
-	arr[6] = 0x1f83d9ab;
-	arr[7] = 0x5be0cd19;
+	static uint32_t h[8];
+	static char initialized = 0;
+	uint32_t primes[8];
+	double temp;
+
+	// Calculating prime numbers and their cube roots takes a lot of time; only do it if it hasn't been done
+	// already.
+	if (!initialized) {
+		generate_prime_numbers(primes, sizeof(primes) / sizeof(uint32_t));
+		for (int i = 0; i < sizeof(primes) / sizeof(uint32_t); ++i) {
+			temp = sqrt((double) primes[i]);  // Cube root of prime number.
+			temp = fmod(temp, 1);             // Modulus by 1 to get rid of whole value.
+			temp *= pow(2, 32);  // Multiply by 2^32 to get the first 32 bits of the fractional component as
+			                     // a whole value.
+			temp = floor(temp);  // Keep only the whole value.
+			h[i] = (uint32_t) temp;  // Store the value.
+		}
+		initialized = 1;
+	}
+
+	if (arr) {
+		for (int i = 0; i < sizeof(h) / sizeof(uint32_t); ++i) {
+			arr[i] = h[i];
+		}
+	}
 }
 
 static void populate_sha_constants(sha_variables_t * c)
@@ -157,7 +167,7 @@ static char * form_message(const char * message)
 		l = bit_size(message);
 
 		// Allocate memory for padded message
-		message_size = blocks * 64 * sizeof(char) + 1;
+		message_size = blocks * 64 * sizeof(char);
 		formed_message = (char *) malloc(message_size);
 		memset(formed_message, 0, message_size);
 
@@ -166,12 +176,13 @@ static char * form_message(const char * message)
 		*/
 
 		// Copy message to padded string
-		strcpy_s(formed_message, message_size, message);
+		memcpy(formed_message, message, strlen(message));
 
 		// Characters are byte aligned; will always have 0x80 after message field
-		strcat_s(formed_message, message_size, border);
+		memcpy(formed_message + strlen(message), border, 1);
 
 		// Insert length value at the end of the padded message
+		// memcpy(formed_message + (blocks * 64) - 8, &l, 8);
 		for (int i = 7; i >= 0; --i) {
 			formed_message[blocks * 64 - i - 1] = (l & (0xFF << (i * 8))) >> (i * 8);
 		}
@@ -180,11 +191,11 @@ static char * form_message(const char * message)
 	return formed_message;
 }
 
-void sha_encrypt(const char * message, sha_variables_t * constants)
+void sha_hash(const char * message, sha_variables_t * constants)
 {
 	uint64_t blocks;
 	char * formed_message;
-	char(*chunks)[64];
+	unsigned char(*chunks)[64];
 	uint32_t words[64];
 	uint32_t a, b, c, d, e, f, g, h;
 	uint32_t T1, T2;
@@ -195,11 +206,11 @@ void sha_encrypt(const char * message, sha_variables_t * constants)
 
 		// Slice message into 512-bit chunks
 		blocks = block_size(message);
-		chunks = ((char(*)[64]) malloc(sizeof(char) * 64 * blocks));
-		memset(chunks, 0, sizeof(char) * 64 * blocks);
+		chunks = ((unsigned char(*)[64]) malloc(sizeof(unsigned char) * 64 * blocks));
+		memset(chunks, 0, sizeof(unsigned char) * 64 * blocks);
 
 		for (int i = 0; i < blocks; ++i) {
-			strncpy_s(chunks[i], 64, &formed_message[i * 64], 64);
+			memcpy(chunks[i], formed_message + (i * 64), 64);
 		}
 
 		for (int i = 0; i < blocks; ++i) {
@@ -207,7 +218,10 @@ void sha_encrypt(const char * message, sha_variables_t * constants)
 			memset(words, 0, sizeof(words));
 
 			// 1. Prepare the message schedule.
-			memcpy(words, chunks[i], 64);
+			for (int j = 0; j < 16; ++j) {
+				words[j] = chunks[i][j * 4] << 24 | chunks[i][j * 4 + 1] << 16 |
+				           chunks[i][j * 4 + 2] << 8 | chunks[i][j * 4 + 3];
+			}
 			for (int j = 16; j < 64; ++j) {
 				words[j] = SHA_SIGMA_1_256(words[j - 2]) + words[j - 7] +
 				           SHA_SIGMA_0_256(words[j - 15]) + words[j - 16];
@@ -238,14 +252,14 @@ void sha_encrypt(const char * message, sha_variables_t * constants)
 			}
 
 			// 4. Compute the i-th intermediate hash value H
-			constants->h[0] += a;
-			constants->h[1] += b;
-			constants->h[2] += c;
-			constants->h[3] += d;
-			constants->h[4] += e;
-			constants->h[5] += f;
-			constants->h[6] += g;
-			constants->h[7] += h;
+			constants->h[0] = SHA_ADD(a, constants->h[0]);
+			constants->h[1] = SHA_ADD(b, constants->h[1]);
+			constants->h[2] = SHA_ADD(c, constants->h[2]);
+			constants->h[3] = SHA_ADD(d, constants->h[3]);
+			constants->h[4] = SHA_ADD(e, constants->h[4]);
+			constants->h[5] = SHA_ADD(f, constants->h[5]);
+			constants->h[6] = SHA_ADD(g, constants->h[6]);
+			constants->h[7] = SHA_ADD(h, constants->h[7]);
 		}
 
 		free(chunks);

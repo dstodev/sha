@@ -13,10 +13,10 @@ int main(int argc, char * argv[])
 		printf("\n");
 	}
 
-	char * d = digest("test");
+	unsigned char * d = digest("test");
 
 	for (int i = 0; i < 32; ++i) {
-		printf("%x", d[i]);
+		printf("%02x ", d[i]);
 	}
 
 	free(d);
